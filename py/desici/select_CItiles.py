@@ -117,7 +117,8 @@ def get_info(telra,teldec,scale=1.,mkplot=True):
 	'''
 	caml = [3,2,1,4,5] #order to match viewer top to bottom
 	camdir = ['center','north','east','south','west']
-	citargets = ci.targets_on_gfa(telra, teldec, targets=targets,scale=scale)
+	ci = desimodel.focalplane.gfa.GFALocations(ci_cameras,scale=scale)
+	citargets = ci.targets_on_gfa(telra, teldec, targets=targets)
 	print('get target info for each camera for pointing '+str(telra)+','+str(teldec)+' and scale '+str(scale))
 	for i in range in (0,len(caml)):
 		cam = caml[i]
