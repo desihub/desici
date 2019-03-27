@@ -9,8 +9,8 @@ ci_tile_max = 58995
 
 #- Load a targets file that has columns RA, DEC
 dirci = '/project/projectdirs/desi/cmx/ci/tiles/v3/'
-#dirout = '/project/projectdirs/desi/cmx/ci/tiles/v3/tileinfo/'
-dirout = ''
+dirout = '/project/projectdirs/desi/cmx/ci/tiles/v3/tileinfo/'
+#dirout = ''
 targets = fitsio.read(dirci+'ci-targets-v3.fits')
 
 #- Load the CI camera location definitions
