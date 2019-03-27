@@ -119,7 +119,7 @@ def get_info(telra,teldec,scale=1.,mkplot=True):
 	camdir = ['center','north','east','south','west']
 	citargets = ci.targets_on_gfa(telra, teldec, targets=targets,scale=scale)
 	print('get target info for each camera for pointing '+str(telra)+','+str(teldec)+' and scale '+str(scale))
-	for i in range in (0,len(caml)):
+	for i in range (0,len(caml)):
 		cam = caml[i]
 		sel = (citargets['GFA_LOC'] == cam)
 		CIC = citargets[sel]
