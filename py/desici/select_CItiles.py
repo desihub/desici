@@ -16,6 +16,7 @@ targets = fitsio.read(dirci+'ci-targets-v3.fits')
 #- Load the CI camera location definitions
 ci_cameras = Table.read('/project/projectdirs/desi/cmx/ci/tiles/v3/ci-corners.ecsv',format='ascii.ecsv' )
 
+'adding some text to make changes for new commit'
 
 def get_Donut_tiles(gmax=15,scale=0.5,ncammin=3,fout='Donut_tiles.txt'):
 	'''
