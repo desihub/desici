@@ -70,7 +70,7 @@ def get_brightstar_info(magmaxcen=7,scale=1,fout='brightarginfo.txt',mkplot=Fals
 	caml = [3,2,1,4,5] #order to match viewer top to bottom
 	camdir = ['center','north','east','south','west']
 
-	fo = open(dirout+fout)
+	fo = open(dirout+fout,'w')
 	fo.write('#info about points with star brighter than '+str(magmaxcen)+' at the center\n')
 	fo.write('#RA DEC Nstar_CIC Brightest_star_CIC Nstar_CIN Brightest_star_CIN  Nstar_CIE Brightest_star_CIE  Nstar_CIS Brightest_star_CIS  Nstar_CIW Brightest_star_CIW \n')
 	print(str(len(brightarg))+' stars brighter than '+str(magmaxcen))
