@@ -59,7 +59,7 @@ def get_Donut_tiles(gmax=15,scale=0.5,ncammin=3,fout='Donut_tiles.txt'):
 	fo.close()
 	return True
 	
-def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax =70,fout='brightarginfo.txt',mkplot=False):
+def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax =70,fout='brightarginfo.txt',magtest=10,mkplot=False):
 	'''
 	select all ci targets brighter than magmaxcen and within ramin,ramx and decmin,decmax
 	write out info about what is on other CCDs
@@ -76,13 +76,14 @@ def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax
 	fo = open(dirout+fout,'w')
 	fo.write('#info about points with star brighter than '+str(magmaxcen)+'and with RA between '+str(ramin)+','+str(ramax)+' and DEC between '+str(decmin)+' '+str(decmax)+' at the center\n')
 	fo.write('#RA DEC Nstar_CIC Brightest_star_CIC Nstar_CIN Brightest_star_CIN  Nstar_CIE Brightest_star_CIE  Nstar_CIS Brightest_star_CIS  Nstar_CIW Brightest_star_CIW \n')
-	print(str(len(brighttarg))+' stars brighter than '+str(magmaxcen))
+	print(str(len(brighttarg))+' stars brighter than '+str(magmaxcen) 'and with RA between '+str(ramin)+','+str(ramax)+' and DEC between '+str(decmin)+' '+str(decmax))
 	print('finding info using them as the pointing center')
 	for i in range(0,len(brighttarg)):
 		bt = brighttarg[i]
 		telra,teldec = bt['RA'],bt['DEC']
 		fo.write(str(bt['RA'])+' '+str(bt['DEC'])+' ')
 		citargets = ci.targets_on_gfa(telra, teldec, targets=targets)
+		nmag = 0
 		print(str(i)+' get target info for each camera for pointing '+str(telra)+','+str(teldec)+' and scale '+str(scale))
 		for i in range (0,len(caml)):
 			cam = caml[i]
@@ -93,7 +94,10 @@ def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax
 			fo.write(str(len(CIC))+' '+str(np.min(CIC['GAIA_PHOT_G_MEAN_MAG']))+' ')	
 			print(str(len(CIC))+' stars on '+camdir[i]+' camera')
 			print('brightest is '+str(np.min(CIC['GAIA_PHOT_G_MEAN_MAG'])))
-			
+			if np.min(CIC['GAIA_PHOT_G_MEAN_MAG']) < magtest:
+				nmag += 1
+		if nmag == 5:
+			print('STAR ON ALL 5 CCDS PASSING MAG TEST AT POINTING '+str(telra)+' '+str(teldec))
 		fo.write('\n')		
 	fo.close()
 	return True
