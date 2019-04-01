@@ -58,7 +58,37 @@ def get_Donut_tiles(gmax=15,scale=0.5,ncammin=3,fout='Donut_tiles.txt'):
 			print('tile '+str(i) +' not found')
 	fo.close()
 	return True
+	
+def get_brightstar_info(magmaxcen=7,scale=1,fout='brightarginfo.txt',mkplot=False):
+	'''
+	select all ci targets brighter than magmaxcen
+	write out info about what is on other CCDs
+	'''
+	ci = desimodel.focalplane.gfa.GFALocations(ci_cameras,scale=scale)
+	sel = (targets['GAIA_PHOT_G_MEAN_MAG'] < magmaxcen)
+	brighttarg = targets[sel]
+	caml = [3,2,1,4,5] #order to match viewer top to bottom
+	camdir = ['center','north','east','south','west']
 
+	fo = open(dirout+fout)
+	fo.write('#info about points with star brighter than '+str(magmaxcen)+' at the center\n')
+	fo.write('#RA DEC Nstar_CIC Brightest_star_CIC Nstar_CIN Brightest_star_CIN  Nstar_CIE Brightest_star_CIE  Nstar_CIS Brightest_star_CIS  Nstar_CIW Brightest_star_CIW \n')
+	print(str(len(brightarg))+' stars brighter than '+str(magmaxcen))
+	print('finding info using them as the pointing center')
+	for i in range(0,len(brighttarg)):
+		telra,teldec = brighttarg['RA'],brighttarg['DEC']
+		fo.write(str(brighttarg['RA']+' '+str(brighttarg['DEC']))+' ')
+		citargets = ci.targets_on_gfa(telra, teldec, targets=brighttarget)
+		print(str(i)+' get target info for each camera for pointing '+str(telra)+','+str(teldec)+' and scale '+str(scale))
+		for i in range (0,len(caml)):
+			cam = caml[i]
+			sel = (citargets['GFA_LOC'] == cam)
+			CIC = citargets[sel]
+			if mkplot:
+				plotcam(cam,CIC)
+			fo.write(str(len(CIC))+' '+str(np.min(CIC['GAIA_PHOT_G_MEAN_MAG']))+' ')	
+		fo.write('\n')		
+	fo.close()
 def plotcam(cam,CIC,winfac=0.01):
 	sizes = (18.1-CIC['GAIA_PHOT_G_MEAN_MAG'])*10
 	#draw_camera(130.36, 24.525,3)
