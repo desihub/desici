@@ -31,7 +31,7 @@ def get_Donut_tiles(gmax=15,scale=0.5,ncammin=3,fout='Donut_tiles.txt'):
 	fo.write('# gmax ='+str(gmax)+'\n')
 	fo.write('# scale ='+str(scale)+'\n')
 	fo.write('# ncammin ='+str(ncammin)+'\n')
-	fo.write('# tile_num num_stars num_cam')
+	fo.write('# tile_num num_stars num_cam\n')
 	nl = []
 	ci = desimodel.focalplane.gfa.GFALocations(ci_cameras,scale=scale)
 	for i in range(58002,58995):
