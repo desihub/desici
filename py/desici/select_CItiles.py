@@ -112,13 +112,19 @@ def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax
 def plotcam(cam,CIC,winfac=0.01):
 	sizes = (18.1-CIC['GAIA_PHOT_G_MEAN_MAG'])*10
 	#draw_camera(130.36, 24.525,3)
-	ra,dec = CIC['RA'],CIC['DEC']
+	#ra,dec = CIC['RA'],CIC['DEC']
+    ii = ci_cameras['GFA_LOC'] == cam
+    xx = ci_cameras['X'][ii]
+    yy = ci_cameras['Y'][ii]
+    ra, dec = desimodel.focalplane.xy2radec(180,0, xx, yy)
 	disra = np.max(ra) - np.min(ra)
 	disdec = np.max(dec) - np.min(dec)
 	xdec = winfac*disdec+np.max(dec)
 	mdec = winfac*disdec+np.min(dec)
 	xra = winfac*disra+np.max(ra)
 	mra = winfac*disra+np.min(ra)
+	
+	
 	if cam == 3 or cam == 2: #these go from positive to negative dec with positive Y and from negative to postive RA with positive X
 		#3 is Center, 2, is North
 		plt.ylim(xdec,mdec)
