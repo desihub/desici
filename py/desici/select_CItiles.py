@@ -109,14 +109,14 @@ def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax
 	fo.close()
 	return True
 	
-def plotcam(cam,CIC,winfac=0.01):
+def plotcam(cam,CIC,rap,decp,winfac=0.01):
 	sizes = (18.1-CIC['GAIA_PHOT_G_MEAN_MAG'])*10
 	#draw_camera(130.36, 24.525,3)
 	#ra,dec = CIC['RA'],CIC['DEC']
 	ii = ci_cameras['GFA_LOC'] == cam
 	xx = ci_cameras['X'][ii]
 	yy = ci_cameras['Y'][ii]
-	ra, dec = desimodel.focalplane.xy2radec(180,0, xx, yy)
+	ra, dec = desimodel.focalplane.xy2radec(rap,decp, xx, yy)
 	disra = np.max(ra) - np.min(ra)
 	disdec = np.max(dec) - np.min(dec)
 	xdec = winfac*disdec+np.max(dec)
@@ -184,7 +184,7 @@ def get_info(telra,teldec,scale=1.,mkplot=True,searchrange=5):
 		sel = (citargets['GFA_LOC'] == cam)
 		CIC = citargets[sel]
 		if mkplot:
-			plotcam(cam,CIC)
+			plotcam(cam,CIC,telra, teldec)
 		print(str(len(CIC))+' stars on '+camdir[i]+' camera')
 		print('brightest is '+str(np.min(CIC['GAIA_PHOT_G_MEAN_MAG'])))
 		print('that is it for now, easy to add more info, histograms, etc...')
