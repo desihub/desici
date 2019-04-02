@@ -113,10 +113,10 @@ def plotcam(cam,CIC,winfac=0.01):
 	sizes = (18.1-CIC['GAIA_PHOT_G_MEAN_MAG'])*10
 	#draw_camera(130.36, 24.525,3)
 	#ra,dec = CIC['RA'],CIC['DEC']
-    ii = ci_cameras['GFA_LOC'] == cam
-    xx = ci_cameras['X'][ii]
-    yy = ci_cameras['Y'][ii]
-    ra, dec = desimodel.focalplane.xy2radec(180,0, xx, yy)
+	ii = ci_cameras['GFA_LOC'] == cam
+	xx = ci_cameras['X'][ii]
+	yy = ci_cameras['Y'][ii]
+	ra, dec = desimodel.focalplane.xy2radec(180,0, xx, yy)
 	disra = np.max(ra) - np.min(ra)
 	disdec = np.max(dec) - np.min(dec)
 	xdec = winfac*disdec+np.max(dec)
