@@ -59,7 +59,7 @@ def get_Donut_tiles(gmax=15,scale=0.5,ncammin=3,fout='Donut_tiles.txt'):
 	fo.close()
 	return True
 	
-def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax =70,fout='brightarginfo.txt',magtest=10,mkplot=False,searchrange=5):
+def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax =70,fout='brightarginfo.txt',magtest=10,nstartest=1,mkplot=False,searchrange=5):
 	'''
 	select all ci targets brighter than magmaxcen and within ramin,ramx and decmin,decmax
 	write out info about what is on other CCDs
@@ -94,7 +94,7 @@ def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax
 			CIC = citargets[sel]
 			if mkplot:
 				plotcam(cam,CIC)
-			if len(CIC) > 0:
+			if len(CIC) > nstartest:
 				ming = np.min(CIC['GAIA_PHOT_G_MEAN_MAG'])
 				if ming < magtest:
 					nmag += 1 
@@ -104,7 +104,7 @@ def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax
 			print(str(len(CIC))+' stars on '+camdir[j]+' camera')
 			print('brightest is '+str(ming))
 		if nmag == 5:
-			print('STAR ON ALL 5 CCDS PASSING MAG TEST AT POINTING '+str(telra)+' '+str(teldec))
+			print(str(nstartest)+' STARS ON ALL 5 CCDS PASSING MAG TEST AT POINTING '+str(telra)+' '+str(teldec))
 		fo.write('\n')		
 	fo.close()
 	return True
