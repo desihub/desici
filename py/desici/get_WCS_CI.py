@@ -180,3 +180,17 @@ def get_wcs(cam,tel_ra,tel_dec):
 	'CD2_2' : CDm[1][1]
 	}
 	return outdic
+	
+def add_wcs(file,cam):
+	from astropy.io import fits
+	import fitsio
+	h = fitsio.read_header(file)
+	tel_ra = h['SKYRA']
+	tel_dec = h['SKYDEC']
+	wcs =  get_wcs(cam,tel_ra,tel_dec)
+	for key in list(wcs.keys()):
+		fits.setval(file, key, value=wcs[key])
+	fits.setval(file, 'CTYPE1', value='RA---TAN')	
+	fits.setval(file, 'CTYPE2', value='DEC--TAN')
+	return True
+	
