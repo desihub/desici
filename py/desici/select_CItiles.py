@@ -74,20 +74,21 @@ def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax
 	caml = [3,2,1,4,5] #order to match viewer top to bottom
 	camdir = ['center','north','east','south','west']
 
-	fo = open(dirout+fout,'w')
-	fo.write('#info about points with star brighter than '+str(magmaxcen)+' and with RA between '+str(ramin)+','+str(ramax)+' and DEC between '+str(decmin)+' '+str(decmax)+' at the center\n')
-	fo.write('#RA DEC Nstar_CIC Brightest_star_CIC Nstar_CIN Brightest_star_CIN  Nstar_CIE Brightest_star_CIE  Nstar_CIS Brightest_star_CIS  Nstar_CIW Brightest_star_CIW \n')
+	#fo = open(dirout+fout,'w')
+	#fo.write('#info about points with star brighter than '+str(magmaxcen)+' and with RA between '+str(ramin)+','+str(ramax)+' and DEC between '+str(decmin)+' '+str(decmax)+' at the center\n')
+	#fo.write('#RA DEC Nstar_CIC Brightest_star_CIC Nstar_CIN Brightest_star_CIN  Nstar_CIE Brightest_star_CIE  Nstar_CIS Brightest_star_CIS  Nstar_CIW Brightest_star_CIW \n')
 	print(str(len(brighttarg))+' stars brighter than '+str(magmaxcen)+ ' and with RA between '+str(ramin)+','+str(ramax)+' and DEC between '+str(decmin)+' '+str(decmax))
 	print('finding info using them as the pointing center')
 	for i in range(0,len(brighttarg)):
 		bt = brighttarg[i]
 		telra,teldec = bt['RA'],bt['DEC']
-		fo.write(str(bt['RA'])+' '+str(bt['DEC'])+' ')
+		#fo.write(str(bt['RA'])+' '+str(bt['DEC'])+' ')
 		tar_sel = (targets['RA']>telra-searchrange) & (targets['RA']<telra+searchrange) & (targets['DEC']>teldec-searchrange) & (targets['DEC']<teldec+searchrange)
 		ptargets = targets[tar_sel]
 		citargets = ci.targets_on_gfa(telra, teldec, targets=ptargets)
 		nmag = 0
-		print(str(i)+' get target info for each camera for pointing '+str(telra)+','+str(teldec)+' and scale '+str(scale))
+		#print(str(i)+' get target info for each camera for pointing '+str(telra)+','+str(teldec)+' and scale '+str(scale))
+		log = []
 		for j in range (0,len(caml)):
 			cam = caml[j]
 			sel = (citargets['GFA_LOC'] == cam)
@@ -98,15 +99,23 @@ def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax
 				ming = np.min(CIC['GAIA_PHOT_G_MEAN_MAG'])
 				if ming < magtest:
 					nmag += 1 
+					log.append(str(len(CIC))+' stars on '+camdir[j]+' camera')
+					log.append('brightest is '+str(ming))
+
 			else:
-				ming = 'NaN'		
-			fo.write(str(len(CIC))+' '+str(ming)+' ')	
-			print(str(len(CIC))+' stars on '+camdir[j]+' camera')
-			print('brightest is '+str(ming))
+				if len(CIC) > 0:
+					ming = np.min(CIC['GAIA_PHOT_G_MEAN_MAG'])
+				else:
+					ming = 'NaN'		
+			#fo.write(str(len(CIC))+' '+str(ming)+' ')	
 		if nmag == 5:
+			print(str(i)+' got target info for each camera for pointing '+str(telra)+','+str(teldec)+' and scale '+str(scale))
 			print(str(nstartest)+' STARS ON ALL 5 CCDS PASSING MAG TEST AT POINTING '+str(telra)+' '+str(teldec))
-		fo.write('\n')		
-	fo.close()
+			for ln in log:
+				print(ln)
+			
+		#fo.write('\n')		
+	#fo.close()
 	return True
 	
 def plotcam(cam,CIC,rap,decp,winfac=0.01):
