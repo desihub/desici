@@ -63,11 +63,12 @@ def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax
 	'''
 	select all ci targets brighter than magmaxcen and within ramin,ramx and decmin,decmax
 	write out info about what is on other CCDs
-	searchrange cuts the target list to +/- around the center RA,DEC, maybe that makes things faster
+	searchrange cuts the target list to +/- around the center RA,DEC; RA is corrected by /cos(bt['DEC']*pi/180.)
 	9-12 hours first half, 9-16 full
 	135 to 180 in ra 240 total
 	10-70
 	'''
+	from math import cos
 	ci = desimodel.focalplane.gfa.GFALocations(ci_cameras,scale=scale)
 	sel = (targets['GAIA_PHOT_G_MEAN_MAG'] < magmaxcen) & (targets['RA'] < ramax) & (targets['RA'] > ramin) & (targets['DEC'] < decmax) & (targets['DEC'] > decmin)
 	brighttarg = targets[sel]
@@ -83,7 +84,7 @@ def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax
 		bt = brighttarg[i]
 		telra,teldec = bt['RA'],bt['DEC']
 		#fo.write(str(bt['RA'])+' '+str(bt['DEC'])+' ')
-		tar_sel = (targets['RA']>telra-searchrange) & (targets['RA']<telra+searchrange) & (targets['DEC']>teldec-searchrange) & (targets['DEC']<teldec+searchrange)
+		tar_sel = (targets['RA']>telra-searchrange/cos(bt['DEC']*pi/180.)) & (targets['RA']<telra+searchrange/cos(bt['DEC']*pi/180.)) & (targets['DEC']>teldec-searchrange) & (targets['DEC']<teldec+searchrange)
 		ptargets = targets[tar_sel]
 		citargets = ci.targets_on_gfa(telra, teldec, targets=ptargets)
 		nmag = 0
