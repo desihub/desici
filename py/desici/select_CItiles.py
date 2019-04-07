@@ -68,7 +68,7 @@ def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax
 	135 to 180 in ra 240 total
 	10-70
 	'''
-	from math import cos
+	from math import cos,pi
 	ci = desimodel.focalplane.gfa.GFALocations(ci_cameras,scale=scale)
 	sel = (targets['GAIA_PHOT_G_MEAN_MAG'] < magmaxcen) & (targets['RA'] < ramax) & (targets['RA'] > ramin) & (targets['DEC'] < decmax) & (targets['DEC'] > decmin)
 	brighttarg = targets[sel]
