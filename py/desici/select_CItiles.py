@@ -16,8 +16,47 @@ targets = fitsio.read(dirci+'ci-targets-v3.fits')
 #- Load the CI camera location definitions
 ci_cameras = Table.read('/project/projectdirs/desi/cmx/ci/tiles/v3/ci-corners.ecsv',format='ascii.ecsv' )
 
-'adding some text to make changes for new commit'
+def isolate_guidestars(isocrit=10.):
+	'''
+	add +2 to the GUIDE_FLAG if the angular distance to nearest star is < isocrit, in arcsec
+	distance is calculated with flat-sky approximation taking cos(dec) factor into account for delta ra
+	'''
+	from astropy.table import Table
+	oldversion = 'v3/'
+	newversion = 'v4/'
+	tiledir = '/project/projectdirs/desi/cmx/ci/tiles/'
+	indir = tiledir+oldversion
+	outdir = tiledir+newversion
+	isocrit = isocrit/3600.
+	isocritsq = isocrit**2.
 
+	for tl in range(58002,58995):
+		try:
+			f = fitsio.read(indir+'citile-0'+str(tl)+'.fits')
+			gf = f['GUIDE_FLAG']
+			dl = np.zeros(len(gf)) #need to flag star when close pair is found so it doesn't get flagged multiple times
+			inmax = np.max(gf)
+			for i in range(0,len(f)):
+				for j in range(i+1,len(f)):
+					rad = f[i]['TARGET_RA']-f[j]['TARGET_RA']
+					decd = f[i]['TARGET_DEC']-f[j]['TARGET_DEC']
+					if abs(decd) < isocrit and dl[i] == 0 and dl[j] == 0:
+						cosd = np.cos(f[i]['TARGET_DEC']*np.pi/180.) #cosdec factor
+						td = (decd**2.+(rad*cosd)**2.)
+						if td < isocritsq:
+							#print(i,j,td)
+							gf[i] += 2
+							gf[j] += 2		
+							dl[i] = 1
+							dl[j] = 1
+			tab = Table.read(indir+'citile-0'+str(tl)+'.fits')
+			tab['GUIDE_FLAG'] = gf
+			print(tl,np.max(tab['GUIDE_FLAG']),inmax)
+			tab.write(outdir+'citile-0'+str(tl)+'.fits',overwrite=True)	
+		except:
+			print('no '+str(tl)+'?')	
+	return True
+	
 def get_Donut_tiles(gmax=15,scale=0.5,ncammin=3,fout='Donut_tiles.txt'):
 	'''
 	find tiles that should be good for donut analysis
