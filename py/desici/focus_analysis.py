@@ -5,8 +5,44 @@ from operator import itemgetter
 from math import *
 import scipy
 from scipy.interpolate import interp1d
+from astropy.table import Table
 focusdat = np.loadtxt('focus_temp_AJR.txt').transpose()
 
+def mktempfits():
+	focusdatn = np.loadtxt('focus_temp_AJR_new.txt').transpose()
+	#make table from txt file
+	focustab = Table([focusdatn[0],focusdatn[1],focusdatn[2],focusdatn[3],focusdatn[4],focusdatn[6],focusdatn[7],focusdatn[8],focusdatn[9],focusdatn[10],focusdatn[5].astype(int),focusdatn[11].astype(int)],names=('focus_N','focus_W', 'focus_C', 'focus_E', 'focus_S', 'fwhm_N', 'fwhm_W', 'fwhm_C', 'fwhm_E', 'fwhm_S', 'expmin','date'))
+	#make empty arrays for everything to extract from headers, using array of quantities
+	hquant = ['TARGTRA','TARGTDEC','MOUNTHA','MOUNTAZ','MOUNTEL','AIRMASS','CI-T1','CI-T2','CI-T3','CI-T4','CI-T5','TDEWPNT','TAIRFLOW','TAIRITMP','TAIROTMP','TAIRTEMP','TCASITMP','TCASOTMP','TCSITEMP','TCSOTEMP','TDBTEMP','TPMNIBT','TPMEOBT','TTRSTEMP','TTRWTEMP','TTRUETBT','TTRUETTT','TTRUNTBT','TTRUNTTT','TTRUSTBT','TTRUSTST','TTRUSTTT','TTRUTSBT','TTRUTSMT','TTRUTSTT','TTRUWTBT','TTRUWTTT','AMNIENTN','AMBIENTS','OUTTEMP','TELBASE']
+	for q in hquant:
+		print(q)
+		focustab[q] = np.zeros(len(focusdatn[0]))
+		for i in range(0,len(focusdatn[0])):
+			night = focustab['date'][i]
+			emin = focustab['expmin'][i]
+			if emin < 10000:
+				zer = '0000'
+			else:
+				zer = 	'000'
+			fl = '/project/projectdirs/desi/spectro/data/'+str(night)+'/'+zer+str(emin)+'/ci-'+zer+str(emin)+'.fits.fz'
+			f = fitsio.read_header(fl,ext=1)
+			try:
+				focustab[q][i] = f[q]
+			except:
+				print(f[q])	
+	focustab.write('focusdata.fits', format='fits', overwrite=True)  
+	return True
+
+def writeDT():
+	f = fitsio.read('focusdata.fits')
+	fo = open('dTdt.dat','w')
+	for i in range(0,len(f)):
+		dt = getdTdt(f[i]['date'],f[i]['expmin'])
+		print(dt)
+		fo.write(str(dt)+'\n')
+	fo.close()
+	return True
+			
 def dTdt(night,npoints=1001,minexp=1000,maxexp=10000):
 	'''
 	get dTdt relationship for a given night
@@ -29,10 +65,12 @@ def dTdt(night,npoints=1001,minexp=1000,maxexp=10000):
 	'''
 	time = []
 	temp = []
+	dir = '/project/projectdirs/desi/spectro/data/'
+	#dir = '/exposures/desi/'
 	for i in range(minexp,maxexp):
 		#print(fl)
 		try:
-			fl = '/exposures/desi/'+str(night)+'/0000'+str(i)+'/ci-0000'+str(i)+'.fits.fz'
+			fl = dir+str(night)+'/0000'+str(i)+'/ci-0000'+str(i)+'.fits.fz'
 			h = fitsio.read_header(fl,ext=1)
 			#print(i)
 			ti = np.mean([h['TTRUNTTT'],h['TTRUETBT'],h['TTRUETTT'],h['TTRUNTBT'],h['TTRUSTBT'],h['TTRUSTST'],h['TTRUSTTT'],h['TTRUTSBT'],h['TTRUTSMT'],h['TTRUTSTT'],h['TTRUWTBT'],h['TTRUWTTT']])
@@ -61,7 +99,10 @@ def dTdt(night,npoints=1001,minexp=1000,maxexp=10000):
 	
 def getdTdt(night,exp):	
 	xx,dyy,t0 = dTdt(night)
-	fl = '/exposures/desi/'+str(night)+'/0000'+str(exp)+'/ci-0000'+str(exp)+'.fits.fz'
+	dir = '/project/projectdirs/desi/spectro/data/'
+	#dir = '/exposures/desi/'
+
+	fl = dir+str(night)+'/0000'+str(exp)+'/ci-0000'+str(exp)+'.fits.fz'
 	h = fitsio.read_header(fl,ext=1)
 	time = (h['MJD-OBS']-t0)*24.*60. # convert to minutes
 	dT = scipy.interpolate.interp1d(xx, dyy, kind='linear')(time)
@@ -88,6 +129,7 @@ def linfit(cam,bad_date=20190409):
 			print(dt)
 			fo.write(str(dt)+'\n')
 		fo.close()
+	print(len(fv),len(temp))
 	A = np.vstack([temp[w], np.ones(len(temp[w]))]).T
 	m, c = np.linalg.lstsq(A, fv[w], rcond=None)[0]
 	B = np.vstack([dtl, np.ones(len(dtl))]).T
@@ -107,15 +149,17 @@ def linfit(cam,bad_date=20190409):
 	print(m,c)
 	plt.clf()
 	plt.plot(temp,m*temp+c,'k--')
+	plt.plot(temp, -8400 + (7.0 - temp) * 110,'r:') 
+	
 	plt.plot(temp[w],fv[w]-(mr*dtl[w]+cr),'ko')
 	plt.plot(temp[~w],fv[~w]-(mr*dtl[~w]+cr),'ro')
 	plt.title(camt)
 	plt.xlabel('mean truss temperature (C)')
 	plt.ylabel('focus value (um)-('+str(np.round(mr,2))+'dT/dt+'+str(np.round(cr,0))+')')
 	plt.text(10,-8200,'least squares fit '+str(np.round(m,1))+'T '+str(np.round(c,0)))
-	plt.text(10,-8300,'value at 7 deg. '+str(np.round(m*7+c,1)))
-	plt.show()
+	plt.text(10,-8300,'value at 7 deg. '+str(np.round(m*7+c,1)))	
 	plt.savefig(camt+'bestfit.png')
+	plt.show()
 	plt.clf()
 	plt.plot(temp,np.ones(len(temp)),'k--')
 	plt.plot(temp,fv-(m*temp+c)-(mr*dtl+cr),'ko')
@@ -138,22 +182,24 @@ def linfit(cam,bad_date=20190409):
 	plt.title(camt)
 	plt.savefig(camt+'dTdtfit.png')
 	plt.show()
-# 	plt.plot(az,np.ones(len(temp)),'k--')
-# 	plt.plot(az,diff,'ko')
-# 	plt.plot(az[~w],diff[~w],'ro')
-# 	plt.xlabel('mount azimuth (deg)')
-# 	plt.ylabel('residual focus value from linear fit (um)')
-# 	plt.title(camt)
-# 	plt.savefig(camt+'subvsaz.png')
-# 	plt.clf()
-# 	plt.plot(el,np.ones(len(temp)),'k--')
-# 	plt.plot(el,diff,'ko')
-# 	plt.plot(el[~w],diff[~w],'ro')
-# 	plt.xlabel('mount elevation (deg)')
-# 	plt.ylabel('residual focus value from linear fit (um)')
-# 	plt.title(camt)
-# 	plt.savefig(camt+'subvsel.png')
-	#plt.show()
+	diff = fv-(m*temp+c)-(mr*dtl+cr)
+	plt.plot(az,np.ones(len(temp)),'k--')
+	plt.plot(az,diff,'ko')
+	#plt.plot(az[w],diff[w],'ro')
+	plt.xlabel('mount azimuth (deg)')
+	plt.ylabel('residual focus value from linear fit (um)')
+	plt.title(camt)
+	plt.savefig(camt+'subvsaz.png')
+	plt.show()
+	plt.clf()
+	plt.plot(el,np.ones(len(temp)),'k--')
+	plt.plot(el,diff,'ko')
+	#plt.plot(el[w],diff[w],'ro')
+	plt.xlabel('mount elevation (deg)')
+	plt.ylabel('residual focus value from linear fit (um)')
+	plt.title(camt)
+	plt.savefig(camt+'subvsel.png')
+	plt.show()
 
 def linfit_all(bad_date=20190409):
 	
@@ -169,6 +215,8 @@ def linfit_all(bad_date=20190409):
 	print(m,c)
 	plt.clf()
 	plt.plot(temps,m*temps+c,'k--')
+	# -8400 + (7.0 – truss_temp) * 110
+	plt.plot(temps, -8400 + (7.0 - temps) * 110,'r:') 
 	plt.plot(temps,fv,'ko')
 	#plt.plot(temp[~w],fv[~w],'ro')
 	plt.title(camt)
@@ -259,7 +307,7 @@ def starinfo(bad_date=20190409,resmax=1,rf=0.15):
 	fo.close()
 	return True
 	
-def plotstarinfo(cam,resmax=10):
+def plotstarinfo(cam,pixres=1,resmax=1):
 	d = np.loadtxt('camxyfocusv.dat').transpose()
 	w = d[0] == cam
 	l0 = []
@@ -268,6 +316,10 @@ def plotstarinfo(cam,resmax=10):
 	l3 = []
 	l4 = []
 	l5 = []
+	div = int(1024/pixres)
+	pixlx = []
+	pixly = []
+	focl = []
 	for i in range(0,len(d[1][w])):
 		x = d[1][w][i]
 		y = d[2][w][i]
@@ -285,6 +337,15 @@ def plotstarinfo(cam,resmax=10):
 				l4.append(d[3][w][i])
 			if  x >= 2048 and y >= 1024:
 				l5.append(d[3][w][i])
+			pixx = int(x/div)
+			pixlx.append(pixx)
+			pixy = int(y/div)
+			pixly.append(pixy)
+			focl.append(d[3][w][i]*1.7)	
+	focl = np.array(focl)
+	pixlx = np.array(pixlx).astype(int)
+	pixly = np.array(pixly).astype(int)
+	#print(np.unique(pixlx))
 	print(np.median(l0),np.std(l0)/sqrt(float(len(l0))),len(l0))
 	plt.hist(l0)
 	plt.show()
@@ -310,18 +371,24 @@ def plotstarinfo(cam,resmax=10):
 	v3 = np.median(l3)	
 	v4 = np.median(l4)	
 	v5 = np.median(l5)	
-	reg = np.zeros((2,3))
-	reg[0][0] = v0
-	reg[1][0] = v1
-	reg[0][1] = v2
-	reg[1][1] = v3
-	reg[0][2] = v4
-	reg[1][2] = v5
+	reg = np.zeros((2*pixres,3*pixres))
+	for i in range(0,len(reg)):
+		for j in range(0,len(reg[0])):
+			w = (pixlx == j)# and (pixly = j)
+			w &= (pixly == i)
+			print(i,j,len(focl[w]),np.median(focl[w]))
+			reg[i][j] = np.median(focl[w])
+	#reg[0][0] = v0
+	#reg[1][0] = v1
+	#reg[0][1] = v2
+	#reg[1][1] = v3
+	#reg[0][2] = v4
+	#reg[1][2] = v5
 	plt.imshow(reg,origin='lower',extent=[0,3072,0,2048],cmap='viridis')
 	plt.xlabel('x pixel')
 	plt.ylabel('y pixel')
 	cbar = plt.colorbar()
-	cbar.ax.set_ylabel(r'$\Delta$ microns relative to CIC for given focus sequence')
+	cbar.ax.set_ylabel(r'1.7$\Delta$ microns relative to CIC for given focus sequence')
 	if cam == 0:
 		titl = 'CIN'
 	if cam == 1:
@@ -333,6 +400,7 @@ def plotstarinfo(cam,resmax=10):
 	if cam == 4:
 		titl = 'CIS'
 	plt.title(titl)
+	plt.savefig(titl+'focuschange.png')
 	plt.show()	
 
 if __name__ == '__main__':

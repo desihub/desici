@@ -1,5 +1,6 @@
 import fitsio
 from astropy.table import Table
+from astropy.io import fits
 import desimodel.focalplane
 import numpy as np
 from matplotlib import pyplot as plt
@@ -57,6 +58,54 @@ def isolate_guidestars(isocrit=10.):
 		except:
 			print('no '+str(tl)+'?')	
 	return True
+
+def remove_tycho():
+	'''
+	remove objects that are Tycho stars
+	'''
+	from astropy.table import Table
+	oldversion = 'v4/'
+	newversion = 'v4/'
+	tiledir = '/project/projectdirs/desi/cmx/ci/tiles/'
+	indir = tiledir+oldversion
+	outdir = tiledir+newversion
+
+	for tl in range(58002,58995):
+		try:
+			tab = Table.read(indir+'citile-0'+str(tl)+'.fits')
+			tych = (0 < tab['REF_ID']) 
+			tych &= ( tab['REF_ID'] < 1e10)
+			fo = tab[~tych]
+			print(len(tab),len(fo))
+			fo.write(outdir+'citile-0'+str(tl)+'.fits',overwrite=True)
+			print(len(fitsio.read(outdir+'citile-0'+str(tl)+'.fits')))	
+		except:
+			print('no '+str(tl)+'?')	
+	return True
+
+
+def fixheader():
+	'''
+	get primary header from v3 into v4
+	'''
+	from astropy.table import Table
+	oldversion = 'v3/'
+	newversion = 'v4/'
+	tiledir = '/project/projectdirs/desi/cmx/ci/tiles/'
+	indir = tiledir+oldversion
+	outdir = tiledir+newversion
+
+	for tl in range(58002,58995):
+		try:
+			fold = fits.open(indir+'citile-0'+str(tl)+'.fits')
+			fnew = fits.open(outdir+'citile-0'+str(tl)+'.fits')
+			fnew[0].header = fold[0].header
+			fnew.writeto(outdir+'citile-0'+str(tl)+'.fits',overwrite=True)
+			print(len(fitsio.read_header(outdir+'citile-0'+str(tl)+'.fits')))	
+		except:
+			print('no '+str(tl)+'?')	
+	return True
+
 	
 def get_Donut_tiles(gmax=15,scale=0.5,ncammin=3,fout='Donut_tiles.txt'):
 	'''
@@ -112,6 +161,7 @@ def get_tile_info(ramin=135,ramax=180,decmin=10,decmax =70,magtest=10,nstartest=
 	caml = [3,2,1,4,5] #order to match viewer top to bottom
 	camdir = ['center','north','east','south','west']
 	dirv4 = '/project/projectdirs/desi/cmx/ci/tiles/v4/'
+	gtile = []
 	for i in range(58002,58995):
 		try:
 		#tile = fitsio.read(dirci+'citile-0'+str(i)+'.fits')
@@ -142,14 +192,19 @@ def get_tile_info(ramin=135,ramax=180,decmin=10,decmax =70,magtest=10,nstartest=
 							ming = 'NaN'		
 					#fo.write(str(len(CIC))+' '+str(ming)+' ')	
 				if nmag == 5:
+					gtile.append(i)
 					print(str(i)+' got target info for each camera for tile '+str(i)+' centered on '+str(ra) +' '+str(dec))
 					print(str(nstartest)+' STARS ON ALL 5 CCDS PASSING MAG TEST for TILE '+str(i)+' centered on '+str(ra) +' '+str(dec))
 					for ln in log:
 						print(ln)
+			else:
+				pass
 		except:
 			print('no '+str(i)+'?')	
 		#fo.write('\n')		
 	#fo.close()
+	print('good tiles are:')
+	print(gtile)
 	return True
 
 	
@@ -213,7 +268,7 @@ def get_brightstar_info(magmaxcen=7,scale=1,ramin=135,ramax=180,decmin=10,decmax
 	#fo.close()
 	return True
 	
-def plotcam(cam,CIC,rap,decp,winfac=0.01):
+def plotcam(cam,CIC,rap,decp,winfac=0.01,tar=''):
 	sizes = (18.1-CIC['GAIA_PHOT_G_MEAN_MAG'])*10
 	#draw_camera(130.36, 24.525,3)
 	#ra,dec = CIC['RA'],CIC['DEC']
@@ -233,7 +288,7 @@ def plotcam(cam,CIC,rap,decp,winfac=0.01):
 		#3 is Center, 2, is North
 		plt.ylim(xdec,mdec)
 		plt.xlim(mra,xra)
-		plt.scatter(CIC['RA'],CIC['DEC'],s=sizes)
+		
 		plt.xlabel('RA')
 		plt.ylabel('DEC')
 		if cam == 3:
@@ -244,7 +299,7 @@ def plotcam(cam,CIC,rap,decp,winfac=0.01):
 		#Sky South
 		plt.ylim(mdec,xdec)
 		plt.xlim(xra,mra)
-		plt.scatter(CIC['RA'],CIC['DEC'],s=sizes)
+		#plt.scatter(CIC['RA'],CIC['DEC'],s=sizes)
 		plt.xlabel('RA')
 		plt.ylabel('DEC')
 		plt.title('South')
@@ -252,7 +307,7 @@ def plotcam(cam,CIC,rap,decp,winfac=0.01):
 	if cam == 1: #Sky East, X/Y flipped RA/DEC both from positive to negative
 		plt.xlim(xdec,mdec)
 		plt.ylim(xra,mra)
-		plt.scatter(CIC['DEC'],CIC['RA'],s=sizes)
+		#plt.scatter(CIC['DEC'],CIC['RA'],s=sizes)
 		plt.xlabel('DEC')
 		plt.ylabel('RA')
 		plt.title('East')
@@ -260,11 +315,11 @@ def plotcam(cam,CIC,rap,decp,winfac=0.01):
 	if cam == 5: #Sky West, X/Y flipped RA/DEC both from negative to positive 
 		plt.xlim(mdec,xdec)
 		plt.ylim(mra,xra)
-		plt.scatter(CIC['DEC'],CIC['RA'],s=sizes)
+		#plt.scatter(CIC['DEC'],CIC['RA'],s=sizes)
 		plt.xlabel('DEC')
 		plt.ylabel('RA')
 		plt.title('West')
-
+	plt.scatter(CIC[tar+'RA'],CIC[tar+'DEC'],s=sizes)
 	plt.show()	
 
 	
