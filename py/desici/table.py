@@ -299,7 +299,7 @@ class LUT_table:
         for vi in range(len(table)):
             v=table[vi]
             dz=math.fabs(el-v[1])
-            dist=self.get_dist(az,el,v[0],v[1])
+            dist=self.get_dist_alt(az,el,v[0],v[1])
             if neardist==None or dist<neardist:
                 neardist=dist
                 bestv=v
@@ -677,6 +677,26 @@ class LUT_table:
         bot=s1*s2+c1*c2*cdele
         dist=math.atan2(top,bot)*180.0/math.pi
         return dist
+
+    def get_dist_alt(self,az1,el1,az2,el2):
+        """
+        Angular distance beween to points on sphere.
+        Units for both input and output are degrees.
+        AJR using formulae used for angular clustering
+        """
+        
+        sa1=math.sin(az1*math.pi/180.0)
+        sa2=math.sin(az2*math.pi/180.0)
+        ca1=math.cos(az1*math.pi/180.0)
+        ca2=math.cos(az2*math.pi/180.0)
+        se1=math.sin(el1*math.pi/180.0)
+        se2=math.sin(el2*math.pi/180.0)
+        ce1=math.cos(el1*math.pi/180.0)
+        ce2=math.cos(el2*math.pi/180.0)
+        ac = ce1*ce2*(ca1*ca2 + sa1*sa2) + se1*se2
+        dist=math.acos(ac)*180.0/math.pi
+        return dist
+
 
     #######################################################
 

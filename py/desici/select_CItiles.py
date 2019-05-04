@@ -288,7 +288,7 @@ def plotcam(cam,CIC,rap,decp,winfac=0.01,tar=''):
 		#3 is Center, 2, is North
 		plt.ylim(xdec,mdec)
 		plt.xlim(mra,xra)
-		
+		plt.scatter(CIC[tar+'RA'],CIC[tar+'DEC'],s=sizes)
 		plt.xlabel('RA')
 		plt.ylabel('DEC')
 		if cam == 3:
@@ -299,7 +299,7 @@ def plotcam(cam,CIC,rap,decp,winfac=0.01,tar=''):
 		#Sky South
 		plt.ylim(mdec,xdec)
 		plt.xlim(xra,mra)
-		#plt.scatter(CIC['RA'],CIC['DEC'],s=sizes)
+		plt.scatter(CIC[tar+'RA'],CIC[tar+'DEC'],s=sizes)
 		plt.xlabel('RA')
 		plt.ylabel('DEC')
 		plt.title('South')
@@ -307,7 +307,7 @@ def plotcam(cam,CIC,rap,decp,winfac=0.01,tar=''):
 	if cam == 1: #Sky East, X/Y flipped RA/DEC both from positive to negative
 		plt.xlim(xdec,mdec)
 		plt.ylim(xra,mra)
-		#plt.scatter(CIC['DEC'],CIC['RA'],s=sizes)
+		plt.scatter(CIC[tar+'DEC'],CIC[tar+'RA'],s=sizes)
 		plt.xlabel('DEC')
 		plt.ylabel('RA')
 		plt.title('East')
@@ -315,11 +315,14 @@ def plotcam(cam,CIC,rap,decp,winfac=0.01,tar=''):
 	if cam == 5: #Sky West, X/Y flipped RA/DEC both from negative to positive 
 		plt.xlim(mdec,xdec)
 		plt.ylim(mra,xra)
-		#plt.scatter(CIC['DEC'],CIC['RA'],s=sizes)
+		plt.scatter(CIC[tar+'DEC'],CIC[tar+'RA'],s=sizes)
 		plt.xlabel('DEC')
 		plt.ylabel('RA')
 		plt.title('West')
-	plt.scatter(CIC[tar+'RA'],CIC[tar+'DEC'],s=sizes)
+	#if cam != 1 and cam != 5:
+	#	plt.scatter(CIC[tar+'RA'],CIC[tar+'DEC'],s=sizes)
+	#else:
+	#	plt.scatter(CIC[tar+'DEC'],CIC[tar+'RA'],s=sizes)	
 	plt.show()	
 
 	
