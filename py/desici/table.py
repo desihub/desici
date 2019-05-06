@@ -312,7 +312,7 @@ class LUT_table:
     #######################################################
 
     def interpolate_inverse_d(self,az,el,
-                              maxdist=15.0,maxdz=5,
+                              maxdist=30.0,maxdz=5,
                               power=3.0,depth=0,
                               usetable=None):
         """
@@ -343,7 +343,7 @@ class LUT_table:
 
         
         """
-        return self.interpolate_nearest(az,el,element,name)
+        #return self.interpolate_nearest(az,el,element,name)
 
         
         self.set('method',['inverse_d',]*6)
@@ -368,7 +368,7 @@ class LUT_table:
             v=table[vi]
 
             dz=math.fabs(el-v[1])
-            dist=self.get_dist(az,el,v[0],v[1])
+            dist=self.get_dist_alt(az,el,v[0],v[1])
             if dist<neardist:
                 neardist=dist
                 neari=vi
