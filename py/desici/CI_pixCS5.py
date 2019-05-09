@@ -17,8 +17,12 @@ West =	[405.298,-13.192,-18.43,-0.0056,-0.9957,1.,	-0.0056,0.0008,	0.0924]
 pixsize = 0.009
 
 def pixtoCS5(x,y,cam):
+	xp = 0
+	yp = 0
 	if cam == 'CIC':
 		cf = Center
+		xp = 16
+		yp = 3
 	if cam == 'CIW':
 		cf = West
 	if cam == 'CIN':
@@ -27,6 +31,8 @@ def pixtoCS5(x,y,cam):
 		cf = East
 	if cam == 'CIS':
 		cf = South
+	x += xp #corrects for overscan issue
+	y += yp
 	X_0 = cf[0]
 	Y_0 = cf[1]
 	Z_0 = cf[2]
