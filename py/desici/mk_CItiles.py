@@ -160,6 +160,59 @@ def mktiles(scale=2,faintlim=18,mint=0,maxt=1e6,searchrange=5):
 		hdulist.writeto(outfile, overwrite=True)
 		print('citile-{:06d}.fits'.format(tileid))
 	 
+def isolate_guidestars(isocrit=5.):
+	'''
+	add +2 to the GUIDE_FLAG if the angular distance to nearest star is < isocrit, in arcsec
+	distance is calculated with flat-sky approximation taking cos(dec) factor into account for delta ra
+	tile files are written back out into new version directory
+	also, cut columns to those specified as needed
+	'''
+	from astropy.table import Table
+	oldversion = 'v5/'
+	newversion = 'v6/'
+	tiledir = '/project/projectdirs/desi/cmx/ci/tiles/'
+	indir = tiledir+oldversion
+	outdir = tiledir+newversion
+	isocrit = isocrit/3600.
+	isocritsq = isocrit**2.
+
+	for tl in range(58001,58995):
+		try:
+			f = fitsio.read(indir+'citile-0'+str(tl)+'.fits')
+			w = f['GAIA_PHOT_G_MEAN_MAG'] < 18
+			fw = f[w]
+			gf = fw['GUIDE_FLAG']
+			dl = np.zeros(len(gf)) #need to flag star when close pair is found so it doesn't get flagged multiple times
+			inmax = np.max(gf)
+			for i in range(0,len(fw)):
+				for j in range(i+1,len(fw)):
+					rad = fw[i]['TARGET_RA']-fw[j]['TARGET_RA']
+					decd = fw[i]['TARGET_DEC']-fw[j]['TARGET_DEC']
+					if abs(decd) < isocrit and dl[i] == 0 and dl[j] == 0:
+						cosd = np.cos(fw[i]['TARGET_DEC']*np.pi/180.) #cosdec factor
+						td = (decd**2.+(rad*cosd)**2.)
+						if td < isocritsq:
+							#print(i,j,td)
+							gf[i] += 2
+							gf[j] += 2		
+							dl[i] = 1
+							dl[j] = 1
+			tab = Table.read(indir+'citile-0'+str(tl)+'.fits')
+			tab[w]['GUIDE_FLAG'] = gf
+			print(tl,np.max(tab['GUIDE_FLAG']),inmax)
+			tab.keep_columns(['RELEASE', 'TARGETID', 'BRICKID', 'BRICK_OBJID', 'TARGET_RA', 'TARGET_DEC', 'TARGET_RA_IVAR', 'TARGET_DEC_IVAR', 'MORPHTYPE', 'FLUX_G', 'FLUX_R', 'FLUX_Z', 'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z', 'REF_ID', 'REF_CAT', 'PMRA', 'PMDEC', 'PMRA_IVAR', 'PMDEC_IVAR', 'GAIA_PHOT_G_MEAN_MAG', 'GAIA_PHOT_G_MEAN_FLUX_OVER_ERROR', 'GAIA_PHOT_BP_MEAN_MAG', 'GAIA_PHOT_BP_MEAN_FLUX_OVER_ERROR', 'GAIA_PHOT_RP_MEAN_MAG', 'GAIA_PHOT_RP_MEAN_FLUX_OVER_ERROR', 'GAIA_ASTROMETRIC_EXCESS_NOISE', 'HPXPIXEL', 'GFA_LOC', 'ETC_FLAG', 'GUIDE_FLAG', 'FOCUS_FLAG'])
+			tab.write(outdir+'citile-0'+str(tl)+'.fits',overwrite=True)	
+			#put the headers on
+			fold = fits.open(indir+'citile-0'+str(tl)+'.fits')
+			fnew = fits.open(outdir+'citile-0'+str(tl)+'.fits')
+			fnew[0].header = fold[0].header
+			fnew.writeto(outdir+'citile-0'+str(tl)+'.fits',overwrite=True)
+
+		except:
+			print('no '+str(tl)+'?')	
+
+
+	return True
 	
 	
 
