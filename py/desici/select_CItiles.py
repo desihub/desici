@@ -148,7 +148,7 @@ def get_Donut_tiles(gmax=15,scale=0.5,ncammin=3,fout='Donut_tiles.txt'):
 	fo.close()
 	return True
 
-def get_tile_info(ramin=135,ramax=180,decmin=10,decmax =70,magtest=10,nstartest=1,mkplot=False,searchrange=5,version=6):
+def get_tile_info(ramin=135,ramax=180,decmin=10,decmax =70,magtest=10,nstartest=1,mkplot=False,searchrange=5,version=6,verbose=False):
 	'''
 	get information about CI targets for each tile within selection
 	searchrange cuts the target list to +/- around the center RA,DEC; RA is corrected by /cos(bt['DEC']*pi/180.)
@@ -160,7 +160,7 @@ def get_tile_info(ramin=135,ramax=180,decmin=10,decmax =70,magtest=10,nstartest=
 	from math import cos,pi
 	caml = [3,2,1,4,5] #order to match viewer top to bottom
 	camdir = ['center','north','east','south','west']
-	dirv4 = '/project/projectdirs/desi/cmx/ci/tiles/v/'+str(version)
+	dirv4 = '/project/projectdirs/desi/cmx/ci/tiles/v'+str(version)+'/'
 	gtile = []
 	for i in range(58002,58995):
 		try:
@@ -200,7 +200,10 @@ def get_tile_info(ramin=135,ramax=180,decmin=10,decmax =70,magtest=10,nstartest=
 			else:
 				pass
 		except:
-			print('no '+str(i)+'?')	
+			if verbose:
+				print('no '+str(i)+'?')	
+			else:
+				pass	
 		#fo.write('\n')		
 	#fo.close()
 	print('good tiles are:')
