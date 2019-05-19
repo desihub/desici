@@ -11,14 +11,17 @@ import numpy as np
 from matplotlib import pyplot as plt
 import numpy as np
 import os
+import time
 
 version = 'v7'
 
-def mktiles(outdir, scale=2,faintlim=18,mint=0,maxt=1e6,searchrange=5):
+def mktiles(outdir,scale=2,faintlim=18,mint=0,maxt=1e6,searchrange=5, debug=False):
     '''
     This mainly copies Stephen's CITiles notebook
     scale allows the footprint for each CCD to be that factor greater in each dimension
     objects with Gaia G > faintlim are assigned the bit 3 too faint flag
+
+    if debug, use only subset of tiles and targets for faster debugging
     '''
     # outdir = '/project/projectdirs/desi/cmx/ci/tiles/'+version+'/'
 
@@ -34,9 +37,9 @@ def mktiles(outdir, scale=2,faintlim=18,mint=0,maxt=1e6,searchrange=5):
             keep[i] = True
 
     keep &= tiles['DEC'] > -30     
-    citiles = Table(tiles[keep])    
+    citiles = Table(tiles[keep])
+
     citiles.meta['EXTNAME'] = 'TILES'
-    citiles.write('{}/ci-tiles-{}.fits'.format(outdir, version), overwrite=True)
 
     #- Give CI tiles new TILEIDs, making sure they don't overlap with the standard tiles
     citileid_min = ((np.max(alltiles['TILEID'])+1001)//1000)*1000
@@ -48,46 +51,48 @@ def mktiles(outdir, scale=2,faintlim=18,mint=0,maxt=1e6,searchrange=5):
     #- Update PROGRAM
     citiles['PROGRAM'] = 'CI'
 
-
     #That prepared the tiles, now the targets and info need to be written to them
     targfile = '{}/ci-targets-{}.fits'.format(outdir, version)
     targets, tgthdr = fitsio.read(targfile, 1, header=True)
 
+    if debug:
+        targets = targets[0::100]
+
     onlyGaia = (targets['MORPHTYPE'] == b'GGAL') | (targets['MORPHTYPE'] == b'GPSF')
     print(np.count_nonzero(onlyGaia), 'targets with only Gaia morphologies')
-    isPSF = (targets['MORPHTYPE'] == b'PSF ')
-    gaia_g = targets['GAIA_PHOT_G_MEAN_MAG']
-    isGPSF = (gaia_g<=19.0) & (targets['GAIA_ASTROMETRIC_EXCESS_NOISE'] < 10**0.5)
-    isGPSF |= (gaia_g>=19.0) & (targets['GAIA_ASTROMETRIC_EXCESS_NOISE'] < 10**(0.5 + 0.2*(gaia_g - 19.0)))
     print('Targets with both LS and Gaia info', np.count_nonzero(~onlyGaia))
     ci_corners = Table.read(os.getenv('DESIMODEL')+'/data/focalplane/ci-corners.ecsv', format='ascii.ecsv')
     ciloc = desimodel.focalplane.GFALocations(ci_corners,scale=scale)
-    #tile_indices = desimodel.footprint.find_points_in_tiles(citiles, targets['RA'], targets['DEC'], radius=1.7)
-    #print('tile got indices')
+
+    # Pre-filter what targets cover what tiles
+    print('Prefilter what targets cover what tiles', time.asctime())
+    tile_indices = desimodel.footprint.find_points_in_tiles(citiles, targets['RA'], targets['DEC'], radius=1.7)
+    print('Got tile indices', time.asctime())
     #above takes a long time, reducing time per tile (at risk of increasing total time) by pre-selecting per tile
+    #but simple filter had RA wraparound problems and potential problems near pole; reverting
+
+    tiles_written = list()
     notargets = list()
     badtileids = list()
-    #if mint == 0:
-    #   mint = mint(citiles)
     if maxt == 1e6:
-        maxt = len(citiles)+1   
+        maxt = len(citiles)   
     for i in range(mint,maxt):
     #     if citiles['IN_DESI'][i] == 0:
     #         continue
         print('tile '+str(i))
         tileid = citiles['TILEID'][i]
-        #ii = tile_indices[i]
-        #if len(ii) == 0:
-        #   # print('Skipping tile ID {} with no input targets'.format(tileid))
-        #   notargets.append(tileid)
-        #   continue
-        #else:
-        #   # print(tileid)
-        #   pass
+        ii = tile_indices[i]
+        if len(ii) == 0:
+           # print('Skipping tile ID {} with no input targets'.format(tileid))
+           notargets.append(tileid)
+           continue
+
+        ptargets = targets[ii]
 
         telra, teldec = citiles['RA'][i], citiles['DEC'][i]
-        tar_sel = (targets['RA']>telra-searchrange/np.cos(teldec*np.pi/180.)) & (targets['RA']<telra+searchrange/np.cos(teldec*np.pi/180.)) & (targets['DEC']>teldec-searchrange) & (targets['DEC']<teldec+searchrange)
-        ptargets = targets[tar_sel]
+        # tar_sel = (targets['RA']>telra-searchrange/np.cos(teldec*np.pi/180.)) & (targets['RA']<telra+searchrange/np.cos(teldec*np.pi/180.)) & (targets['DEC']>teldec-searchrange) & (targets['DEC']<teldec+searchrange)
+        # ptargets = targets[tar_sel]
+
         if len(ptargets) == 0:
         # print('Skipping tile ID {} with no input targets'.format(tileid))
             notargets.append(tileid)
@@ -96,9 +101,9 @@ def mktiles(outdir, scale=2,faintlim=18,mint=0,maxt=1e6,searchrange=5):
         # print(tileid)
         #   pass
         
-        if teldec > 85:
-            print('might need different selection for this tile centered at dec '+str(teldec))
-        #citargets = ciloc.targets_on_gfa(telra, teldec, targets[tile_indices[i]])
+        # if teldec > 85:
+        #     print('might need different selection for this tile centered at dec '+str(teldec))
+
         citargets = ciloc.targets_on_gfa(telra, teldec, ptargets)
         if len(citargets) == 0:
             print("ERROR: no targets cover CI cameras on tile {}".format(tileid))
@@ -106,30 +111,33 @@ def mktiles(outdir, scale=2,faintlim=18,mint=0,maxt=1e6,searchrange=5):
             continue
 
         #- Copied & modified from fiberassign; should refactor that
-        flag = np.ones(len(citargets), dtype="i2")
-        ii = (citargets["MORPHTYPE"] == "PSF ") | (citargets["MORPHTYPE"] == "GPSF")
-        if np.count_nonzero(ii) == 0:
-            print("ERROR: no good GFA targets for "
-                      "ETC/GUIDE/FOCUS on tile {}".format(tileid))
-            badtileids.append(tileid)
-            #- but keep going and write file even without guide stars
+
+        #- flag=0 is good; non-zero is bitmask of why not
+        flag = np.zeros(len(citargets), dtype="i2")
+
+        #- Not PSF-like
+        isPSF = (citargets["MORPHTYPE"] == "PSF ") | (citargets["MORPHTYPE"] == "GPSF")
+        flag[~isPSF] |= 2**0
+
+        #- Not Isolated
+        if len(citargets) > 1:
+            notIsolated = ~isolated(citargets['RA'], citargets['DEC'])
+            flag[notIsolated] |= 2**1
+
+        #- Questionable astrometry / proper motion
         tych = (0 < citargets['REF_ID']) 
         tych &= ( citargets['REF_ID'] < 1e10)
+        flag[tych] |= 2**2
 
-        flag[ii] = 0
+        #- Too faint
+        faint = citargets['GAIA_PHOT_G_MEAN_MAG'] > faintlim
+        flag[faint] |= 2**3
+
+        #- Set flag columns
         citargets["ETC_FLAG"] = flag
         citargets["GUIDE_FLAG"] = flag
-        citargets[tych]["GUIDE_FLAG"] += 2**2
-        faint = citargets['GAIA_PHOT_G_MEAN_MAG'] > 18
-        citargets[faint]["GUIDE_FLAG"] += 2**3
         citargets["FOCUS_FLAG"] = flag
-        ig =  np.zeros(len(citargets), dtype="bool") #this will be 0 if not a guide star, 1 if one
-        ig[ii] =1
 
-        ig[tych] = 0
-        ig[faint] = 0
-        citargets["IS_GUIDE"] = ig #this will be 0 if not a guide star, 1 if one
-        
         #- Rename some columns to prevent ambiguity for ICS
         citargets.rename_column('RA', 'TARGET_RA')
         citargets.rename_column('DEC', 'TARGET_DEC')
@@ -159,8 +167,28 @@ def mktiles(outdir, scale=2,faintlim=18,mint=0,maxt=1e6,searchrange=5):
     
         outfile = os.path.join(outdir, 'citile-{:06d}.fits'.format(tileid))
         hdulist.writeto(outfile, overwrite=True)
+        tiles_written.append(tileid)
         print('citile-{:06d}.fits'.format(tileid))
-     
+
+    # Write a table with just the tiles that actually got written
+    ii = np.in1d(citiles['TILEID'], tiles_written)
+    citiles[ii].write('{}/ci-tiles-{}.fits'.format(outdir, version), overwrite=True)
+
+def isolated(ra, dec, mindist=5.0):
+    '''
+    Returns bool array for whether targets are isolated
+
+    Args:
+        ra: array, RA in degrees
+        dec: array, dec in degrees
+        mindist: minimum separation distance in arcsec
+    '''
+    import astropy.units as u
+    from astropy.coordinates import SkyCoord
+    cx = SkyCoord(ra*u.deg, dec*u.deg)
+    index, separation, dist3d = cx.match_to_catalog_sky(cx, nthneighbor=2)
+    return separation.to(u.arcsec) > mindist*u.arcsec
+
 def isolate_guidestars(isocrit=5.):
     '''
     add +2 to the GUIDE_FLAG if the angular distance to nearest star is < isocrit, in arcsec
