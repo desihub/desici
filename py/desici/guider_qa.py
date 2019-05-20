@@ -15,7 +15,10 @@ from pylab import * # sorry...
 from matplotlib import cm
 
 def main():
-    parser = argparse.ArgumentParser(usage = "{prog} [options]")
+    parser = argparse.ArgumentParser(
+        usage = "guider_qa [options]",
+        description = "Runs QA on guider centroids",
+        epilog = "At NERSC, you can provide either --infile or --expid and --night; at KPNO you must provide --infile")
     parser.add_argument("-i", "--infile", type=str,  help="input centroids file")
     parser.add_argument("-e", "--expid", type=int, help="exposure ID ")
     parser.add_argument("-n", "--night", type=int, help="YEARMMDD night of sunset")
@@ -25,7 +28,7 @@ def main():
 
     if args.infile is None:
         if args.night is None or args.expid is None:
-            print('Provide --infile or --night plus --expid but not both')
+            print('Must provide --infile or --night plus --expid')
             return 1
 
         args.infile = os.path.join(
@@ -212,6 +215,7 @@ def plot_offsets(data, outfile):
     ii = (data['ci'] == 'CIX')
     plot(data['frame'][ii], data['ra_err'][ii], '-', color='k')
     ylabel('ra_err [arcsec]')
+    ylim(-1.1, 1.1)
     grid()
 
     subplot(4,1,4)
@@ -225,6 +229,7 @@ def plot_offsets(data, outfile):
     plot(data['frame'][ii], data['dec_err'][ii], '-', color='k')
     ylabel('dec_err [arcsec]')
     xlabel('frame number')
+    ylim(-1.1, 1.1)
     grid()
 
     savefig(outfile)
