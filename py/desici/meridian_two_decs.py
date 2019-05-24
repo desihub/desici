@@ -73,7 +73,7 @@ if __name__ == "__main__":
     parser.add_argument('--pointing_exptime', default=15.0,
                         help='exposure time for pointing check after slewing in seconds, default 15')
 
-    parser.add_argument('--visits_per_field', default=25,
+    parser.add_argument('--visits_per_field', default=25, type=int,
                         help='number of visits per field, default of 25 errs larger than necessary')
 
     parser.add_argument('--outname', default='meridian_two_decs.json',
