@@ -17,6 +17,18 @@ def all_observations(n_per_exptime):
 
     return requests
 
+def total_time_estimate(requests):
+    t = 0.0 # seconds
+
+    t_readout = 6.5 # seconds
+
+    for request in requests:
+        t += (request['exptime'] + t_readout)
+
+    t_minutes = t/60.0
+
+    return t_minutes
+
 if __name__ == "__main__":
     descr = 'create script to gather closed-dome data that can be used to measure gain'
     parser = argparse.ArgumentParser(description=descr)
@@ -32,6 +44,8 @@ if __name__ == "__main__":
     requests = all_observations(args.n_per_exptime)
 
     outname = args.outname
+
+    print('CI exposure sequence will take ' + "{:.1f}".format(total_time_estimate(requests)) + ' minutes')
 
     with open(outname, 'w') as outfile:
         json.dump(requests, outfile, indent=2)
