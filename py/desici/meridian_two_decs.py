@@ -61,10 +61,10 @@ if __name__ == "__main__":
     parser.add_argument('lst_degrees', type=float, nargs=1, 
                         help='LST in decimal degrees at start of test')
 
-    parser.add_argument('--dec_north_degrees', default=60.0,
+    parser.add_argument('--dec_north_degrees', default=60.0, type=float,
                         help='northern Dec in decimal degrees for CI exposures, default 60')
 
-    parser.add_argument('--dec_south_degrees', default=10.0,
+    parser.add_argument('--dec_south_degrees', default=10.0, type=float,
                         help='southern Dec in decimal degrees for CI exposures, default 10')
 
     parser.add_argument('--exptime', default=60.0,
