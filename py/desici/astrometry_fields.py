@@ -44,12 +44,16 @@ def ha_dec_grid(do_plot=False):
 
     if do_plot:
         plt.plot(ha_sequence, dec_sequence)
-        plt.show()
+        plt.scatter(ha_sequence, dec_sequence)
+        plt.title('lines connect time-adjacent exposures')
+        plt.xlabel('HA (deg)')
+        plt.ylabel('Dec (deg)')
+        plt.savefig('astrometry_fields.png', bbox_inches='tight')
 
     return ha_sequence, dec_sequence
 
-def all_observations(exptime=60.0):
-    ha, dec = ha_dec_grid()
+def all_observations(exptime=60.0, do_plot=False):
+    ha, dec = ha_dec_grid(do_plot=do_plot)
 
     requests = []
     for t in zip(ha, dec):
@@ -69,9 +73,12 @@ if __name__ == "__main__":
     parser.add_argument('--outname', default='ha_dec_grid.json',
                         help='output file name for observing script')
 
+    parser.add_argument('--do_plot', default=False, action='store_true',
+                        help='save plot showing sequence of pointings')
+
     args = parser.parse_args()
 
-    requests = all_observations(exptime=args.exptime)
+    requests = all_observations(exptime=args.exptime, do_plot=args.do_plot)
 
     outname = args.outname
 
