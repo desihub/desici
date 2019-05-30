@@ -62,6 +62,41 @@ def all_observations(exptime=60.0, do_plot=False):
 
     return requests
 
+def total_time_estimate(requests):
+    t = 0.0 # seconds
+
+    # based on recent experience the full readout/OCS
+    # overhead is fractionally a significant amount larger than the 
+    # nominal 6.5 second readout time
+    # so this isn't really the detector readout time, but is more 
+    # realistic for calculating overheads
+
+    # assume this value is also valid for FVC
+
+    t_readout = 10.0 # seconds
+
+    # just a guess
+
+    t_settle = 5.0 # seconds
+
+    for request in requests:
+        t += (request['exptime'] + t_readout)
+
+    n_slews = len(ha_vals)*len(dec_vals) - 1
+    
+    t += t_settle*n_slews
+
+    slew_tot_ha_deg = np.max(ha_vals)-np.min(ha_vals)
+    slew_tot_dec_deg = (len(np.unique(ha_vals)) - 1)*(np.max(dec_vals)-np.min(dec_vals))
+
+    seconds_per_deg = 2.7
+
+    t += seconds_per_deg*(slew_tot_ha_deg + slew_tot_dec_deg)
+
+    t_minutes = t/60.0
+
+    return t_minutes
+
 if __name__ == "__main__":
     descr = 'create script to take exposures at a high Dec grid of (HA, Dec)'
 
@@ -84,3 +119,5 @@ if __name__ == "__main__":
 
     with open(outname, 'w') as outfile:
         json.dump(requests, outfile, indent=2)
+
+    print('CI exposure sequence will take ' + "{:.1f}".format(total_time_estimate(requests)) + ' minutes')
