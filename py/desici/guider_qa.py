@@ -68,10 +68,10 @@ def load_centroids(filename):
     expid = cx['expid']
     dirname = os.path.dirname(filename)
     guidefile = os.path.join(dirname, 'guide-{:08d}.fits.fz'.format(expid))
-    if os.path.exists(guidefile):
+    try:
         hdr = fitsio.read_header(guidefile, 0)
         skyra, skydec = hdr['SKYRA'], hdr['SKYDEC']
-    else:
+    except OSError:
         skyra, skydec = None, None
 
     #- platescale values taken from Echo22 design in
@@ -89,12 +89,13 @@ def load_centroids(filename):
         ci = 'CIX'
         roi = 1
 
-        #- NOTE: it appears that combined_y is aligned with the DEC axis
-        #- *not* with the CIC y-axis which is -dec
+        #- NOTE: Prior to 20190523 it appears that combined_y was
+        #- aligned with the DEC axis *not* with the CIC y-axis which is -dec
         x_error = frame['combined_x']
         y_error = frame['combined_y']
         ra_err = pixsize * x_error / center_platescale
-        dec_err = pixsize * y_error / center_platescale
+        ### dec_err = pixsize * y_error / center_platescale
+        dec_err = -pixsize * y_error / center_platescale
 
         rows.append(dict(frame=i, ci=ci, roi=roi,
                          x_error=x_error, y_error=y_error,
