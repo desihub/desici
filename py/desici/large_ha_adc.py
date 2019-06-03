@@ -28,7 +28,6 @@ def one_image_request(reqha, reqdec, exptime=60.0):
              "reqha" : reqha,
              "reqdec" : reqdec,
              "track": True,
-             "useadc": True,
              "correct_for_adc": True,
              "program": "astrometry fields with ADC"}
 
