@@ -38,6 +38,22 @@ def plot_1exp(fname, outdir='/n/fink2/www/ameisner/ci_psfs'):
         plt.title(h['EXTNAME'])
         plt.axis('off')
 
+    fake_stamp = np.zeros((51, 51))
+    plt.subplot(3, 3, 1)
+    plt.imshow(fake_stamp, origin='lower', vmin=-20, vmax=-10, cmap='gray', interpolation='nearest')
+
+    fname_image = fname.replace('_psf-a.fits', '_bitmask.fits.gz')
+
+    h_image = fits.getheader(fname_image)
+    plt.text(2, 45, 'EXPID:  ' + str(h_image['EXPID']), fontsize=8)
+    plt.text(2, 38, 'PROGRAM: ', fontsize=8)
+    plt.text(2, 31, h_image['PROGRAM'], fontsize=8)
+    plt.text(2, 24, 'EXPTIME: ' + ("%.1f" % h_image['EXPTIME']), fontsize=8)
+
+    plt.text(2, 17, 'SKYRA: ' + ("%.1f" % h_image['SKYRA']), fontsize=8)
+    plt.text(2, 10, 'SKYDEC: '+ ("%.1f" % h_image['SKYDEC']), fontsize=8)
+    plt.axis('off')
+
     print('~'*80)
     outname = os.path.basename(fname)
     outname = outname.replace('.fits', '.png')
