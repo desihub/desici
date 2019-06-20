@@ -15,6 +15,14 @@ def rotate_1psf(stamp, extname):
 def plot_1exp(fname, outdir='/n/fink2/www/ameisner/ci_psfs'):
     hdul = fits.open(fname)
 
+    print('~'*80)
+    outname = os.path.basename(fname)
+    outname = outname.replace('.fits', '.png')
+    outname = os.path.join(outdir, outname)
+    print(outname)
+    if os.path.exists(outname):
+        return
+
     plt.figure(figsize=(6, 6))
 
     for hdu in hdul:
@@ -50,15 +58,13 @@ def plot_1exp(fname, outdir='/n/fink2/www/ameisner/ci_psfs'):
     plt.text(2, 31, h_image['PROGRAM'], fontsize=8)
     plt.text(2, 24, 'EXPTIME: ' + ("%.1f" % h_image['EXPTIME']), fontsize=8)
 
-    plt.text(2, 17, 'SKYRA: ' + ("%.1f" % h_image['SKYRA']), fontsize=8)
-    plt.text(2, 10, 'SKYDEC: '+ ("%.1f" % h_image['SKYDEC']), fontsize=8)
+    if not isinstance(h_image['SKYRA'], str):
+        plt.text(2, 17, 'SKYRA: ' + ("%.1f" % h_image['SKYRA']), fontsize=8)
+
+    if not isinstance(h_image['SKYDEC'], str):
+        plt.text(2, 10, 'SKYDEC: '+ ("%.1f" % h_image['SKYDEC']), fontsize=8)
     plt.axis('off')
 
-    print('~'*80)
-    outname = os.path.basename(fname)
-    outname = outname.replace('.fits', '.png')
-    outname = os.path.join(outdir, outname)
-    print(outname)
     plt.savefig(outname) # , bbox_inches='tight')
     plt.cla()
 
