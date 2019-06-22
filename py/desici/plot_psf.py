@@ -57,6 +57,7 @@ def plot_1exp(fname, outdir='/n/fink2/www/ameisner/ci_psfs'):
     plt.text(2, 38, 'PROGRAM: ', fontsize=8)
     plt.text(2, 31, h_image['PROGRAM'], fontsize=8)
     plt.text(2, 24, 'EXPTIME: ' + ("%.1f" % h_image['EXPTIME']), fontsize=8)
+    plt.text(2, 3, 'NIGHT: ' + str(h_image['NIGHT']), fontsize=8)
 
     if not isinstance(h_image['SKYRA'], str):
         plt.text(2, 17, 'SKYRA: ' + ("%.1f" % h_image['SKYRA']), fontsize=8)
