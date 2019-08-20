@@ -33,7 +33,8 @@ def rerungfaproc(seqlist=None):
 
 # also taken from gfaproctests.ipynb on nersc 20190818
 # call as:
-#successlist,fewmatchlist,badpointinglist,nomatchlist,missinghdulist,missinghduerrlist,badimagelist,badnfsproclist,otherlist = sortgfaprocout()
+#successlist,fewmatchlist,badpointinglist,nomatchlist,missinghdulist,
+#missinghduerrlist,badimagelist,badnfsproclist,otherlist = sortgfaprocout()
 def sortgfaprocout(seqlist=None):
     if seqlist is None:
         seqlist = os.listdir(os.environ['PMDIR'])
