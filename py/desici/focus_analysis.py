@@ -855,6 +855,19 @@ def focusGFAcen():
 	plt.ylabel('focus ')
 	plt.title('rms '+str(rmsd.round(0))+', focus = LUT+'+str(cdt.round(0))+'+TCSOTEMPx'+str(mdt.round(0)))
 	plt.show()
+
+	mdt, cdt = np.linalg.lstsq(A, df[1])[0]
+	mod = cdt+mdt*dt[-3]
+	rmsd = np.std(df[1]-mod)
+	
+	plt.plot(dt[-3],df[1],'ko')
+	plt.plot(dt[-3][w],df[1][w],'ro')
+	plt.plot(dt[-3],mod,'b:')
+	plt.xlabel('TCSOTEMP')
+	plt.ylabel('focus ')
+	plt.title('rms '+str(rmsd.round(0))+', focus = no LUT+'+str(cdt.round(0))+'+TCSOTEMPx'+str(mdt.round(0)))
+	plt.show()
+
 	night = df[-1]-20191023
 	w = night > 8
 	night[w] -= 69
@@ -1062,11 +1075,13 @@ def focusGFAcen():
 				plt.show()
 
 		
-def plotGFAdata(b,slp=110,dirout='/Users/ashleyross/Dropbox/focusanalysis/'):
+def plotGFAdata(b,slp=110,dirout='/Users/ashleyross/Dropbox/focusanalysis/',seemax=1.31):
 	#slp = 110.
 	df = np.loadtxt('thunderstruck/focusvstemp_GFA.txt').transpose()	
 	dt = np.loadtxt('thunderstruck/temps.txt').transpose()	
 	w = df[0] > 23517
+	wsee = df[-2] < seemax
+	print(len(df[-2]),len(df[-2][wsee]))
 
 	if len(dt[0]) != len(df[0]):
 		return 'MISMATCHED FILES!'
@@ -1074,9 +1089,9 @@ def plotGFAdata(b,slp=110,dirout='/Users/ashleyross/Dropbox/focusanalysis/'):
 	names = open('thunderstruck/temps.txt').readline().split()
 	print(names)
 	print('assuming truss temp is last column and elevation is the last')
-	tt = dt[-1]	
-	el = dt[0]
-	az = dt[1]
+	tt = dt[-1][wsee]	
+	el = dt[0][wsee]
+	az = dt[1][wsee]
 	from table import LUT_table
 	lut = LUT_table('TelescopeLUT_20191024.txt')
 	dl = np.zeros(len(el))
@@ -1086,14 +1101,14 @@ def plotGFAdata(b,slp=110,dirout='/Users/ashleyross/Dropbox/focusanalysis/'):
 		dl[i] = dfl
 	mod = (7-tt)*slp+b+dl
 	print('rms and mean offset for fiducial model + LUT')
-	print(np.std(mod-df[1]),np.mean(mod-df[1]))
+	print(np.std(mod-df[1][wsee]),np.mean(mod-df[1][wsee]))
 	
-	plt.plot(tt,df[1],'ko')
+	plt.plot(tt,df[1][wsee],'ko')
 	#plt.plot(tt[w],df[1][w],'ro')
 	plt.plot(tt,mod,'r--')
 	plt.xlabel('Temperature (Deg. C)')
 	plt.ylabel('focus estimate')
-	plt.title('focus compared to autofocus, rms='+str(np.std(mod-df[1]).round(0)))
+	plt.title('focus compared to autofocus, rms='+str(np.std(mod-df[1][wsee]).round(0)))
 	plt.savefig(dirout+'autofocus.png')
 	plt.show()
 # 	for i in range(0,len(names)-1):
@@ -1102,7 +1117,7 @@ def plotGFAdata(b,slp=110,dirout='/Users/ashleyross/Dropbox/focusanalysis/'):
 # 		plt.ylabel('T vs. focus residual, w.o/el term')
 # 		plt.show()
 
-	plt.plot(el,df[1]-mod,'ko')
+	plt.plot(el,df[1][wsee]-mod,'ko')
 	#plt.plot(el,dl,'rd')
 	plt.xlabel('elevation')
 	plt.ylabel('T vs. focus residual')
@@ -1118,33 +1133,34 @@ def plotGFAdata(b,slp=110,dirout='/Users/ashleyross/Dropbox/focusanalysis/'):
 # 	plt.show()
 	#['TARGTEL','TARGTAZ','TDBTEMP','THINGES','THINGEW','TPMAVERT','TPMDESIT','TTRSTEMP','TTRWTEMP','PMIRTEMP','TPMNIBT','TCSITEMP','TCSOTEMP','TAIRTEMP','TRUSTEMP']
 	for i in range(0,len(names)):
-		cc = np.corrcoef(dt[i],(df[1]-dl))[0][1]
+		cc = np.corrcoef(dt[i][wsee],(df[1][wsee]-dl))[0][1]
 		if abs(cc) > 0.9:
 			print(names[i],cc)
-			A = np.vstack([dt[i], np.ones(len(dt[i]))]).T
-			mdt, cdt = np.linalg.lstsq(A, (df[1]-dl))[0]
-			modT = dl+cdt+mdt*dt[i]
-			rmsd = np.std(df[1]-modT)
+			A = np.vstack([dt[i][wsee], np.ones(len(dt[i][wsee]))]).T
+			mdt, cdt = np.linalg.lstsq(A, (df[1][wsee]-dl))[0]
+			modT = dl+cdt+mdt*dt[i][wsee]
+			rmsd = np.std(df[1][wsee]-modT)
 			print(mdt,cdt)
-			plt.plot(dt[i],df[1]-dl,'ko')
-			plt.plot(dt[i][w],df[1][w]-dl[w],'ro')
-			plt.plot(dt[i],modT-dl,'b:')
+			plt.plot(dt[i][wsee],df[1][wsee]-dl,'ko')
+			#plt.plot(dt[i][w],df[1][w]-dl[w],'ro')
+			plt.plot(dt[i][wsee],modT-dl,'b:')
 			plt.xlabel(names[i])
 			plt.ylabel('focus ')
 			plt.title('rms '+str(rmsd) +'(LUT is included')
 			plt.savefig(dirout+names[i]+'.png')
 			plt.show()
-			mdt, cdt = np.linalg.lstsq(A, (df[1]))[0]
-			modT = cdt+mdt*dt[i]
-			rmsd = np.std(df[1]-modT)
+			mdt, cdt = np.linalg.lstsq(A, (df[1][wsee]))[0]
+			modT = cdt+mdt*dt[i][wsee]
+			rmsd = np.std(df[1][wsee]-modT)
 			print(mdt,cdt)
-			plt.plot(dt[i],df[1],'ko')
-			plt.plot(dt[i][w],df[1][w],'ro')
-			plt.plot(dt[i],modT,'b:')
+			plt.plot(dt[i][wsee],df[1][wsee],'ko')
+			#plt.plot(dt[i][w],df[1][w],'ro')
+			plt.plot(dt[i][wsee],modT,'b:')
 			plt.xlabel(names[i])
 			plt.ylabel('focus ')
 			plt.title('rms '+str(rmsd) +'(LUT not included')
 			plt.show()
+	return True
 	for i in range(0,len(names)-1):
 		cc = np.corrcoef(dt[i],(mod-df[1]))[0][1]
 		if abs(cc) > 0.4:
